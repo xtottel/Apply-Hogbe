@@ -80,7 +80,7 @@ const handleIframeLoad = () => {
         </div>
 
         <Image
-          src="/Banner.jpg"
+          src="/101.jpg"
           alt="Mama Hogbe Banner"
           width={600}
           height={100}

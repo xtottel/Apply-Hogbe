@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
+import { Camera } from 'lucide-react'
 
 export default function RegisterPage() {
   const [form, setForm] = useState({
@@ -30,11 +31,11 @@ export default function RegisterPage() {
     occupation: '',
     hobbies: '',
     hasPageantExperience: '',
+    auditionLocation: '',
     pageantDetails: '',
     whyContest: '',
     whyBeMamaHogbe: '',
     healthCondition: '',
-    pin: '',
     photo: null as File | null,
   })
 
@@ -48,10 +49,20 @@ export default function RegisterPage() {
     setForm((prev) => ({ ...prev, [name]: value }))
   }
 
+  const [preview, setPreview] = useState<string | null>(null);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] || null
-    setForm((prev) => ({ ...prev, photo: file }))
-  }
+    const file = e.target.files?.[0] || null;
+    setForm((prev) => ({ ...prev, photo: file }));
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => setPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    } else {
+      setPreview(null);
+    }
+  };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -88,15 +99,23 @@ export default function RegisterPage() {
         </div>
 
         <Image
-          src="/Banner.jpg"
+          src="/101.jpg"
           alt="Mama Hogbe Banner"
           width={600}
           height={100}
           className="w-full h-32 object-cover rounded"
         />
 
-        {/* PIN */}
-        <Input label="PIN" name="pin" value={form.pin} onChange={handleChange} required />
+        <p className="text-sm text-gray-600">
+          Please fill out the form below to register for the Mama Hogbe 2025 auditions.
+          Ensure all information is accurate and complete.
+          <br />
+          <span className="text-red-500 font-semibold">Note: This is not the official consent form.</span>
+          <br />
+          You will need to download and fill the official consent form separately.
+        </p>
+
+
 
         {/* Section A: Personal Info */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -165,35 +184,76 @@ export default function RegisterPage() {
           </select>
         </div>
 
+        <div className="space-y-2">
+          <label className="block text-sm font-medium">Where do you want to attend the audition?</label>
+          <select
+            name="auditionLocation"
+            value={form.auditionLocation}
+            onChange={handleChange}
+            className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+            required
+          >
+
+            <option value="">Select</option>
+            <option value="Dzodze">Dzodze</option>
+            <option value="Abor">Abor</option>
+            <option value="Denu">Denu</option>
+            <option value="Agbozume">Agbozume</option>
+            <option value="Anloga">Anloga</option>
+          </select>
+        </div>
+
         <Input label="If yes, state which one and the year" name="pageantDetails" value={form.pageantDetails} onChange={handleChange} />
         <TextArea label="Why do you want to contest and win Mama Hogbe Crown?" name="whyContest" value={form.whyContest} onChange={handleChange} />
         <TextArea label="Why do you want to be Mama Hogbe?" name="whyBeMamaHogbe" value={form.whyBeMamaHogbe} onChange={handleChange} />
         <Input label="Do you have any health conditions?" name="healthCondition" value={form.healthCondition} onChange={handleChange} />
 
-        {/* Upload */}
-        <div className="space-y-1">
-          <label className="block text-sm font-medium">Upload Profile Photo</label>
-          <input type="file" accept="image/*" onChange={handleFileChange} className="w-full text-sm" required />
+
+        <div className="space-y-2">
+      <label className="block text-sm font-medium text-gray-700">Upload Profile Photo</label>
+
+      <div className="flex items-center gap-4">
+        <div className="relative w-24 h-24 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden bg-gray-50">
+          {preview ? (
+            <Image
+              fill
+              src={preview}
+              alt="Preview"
+              className="object-cover w-full h-full rounded-full"
+            />
+          ) : (
+            <Camera className="h-6 w-6 text-gray-400" />
+          )}
         </div>
+
+        <input
+          type="file"
+          accept="image/*"
+          onChange={handleFileChange}
+          className="block text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100"
+          required
+        />
+      </div>
+    </div>
 
                 <hr className="my-8" />
 
-<section className="text-center space-y-3">
-  <h3 className="text-lg font-semibold text-gray-800">Consent Form</h3>
-  <p className="text-sm text-gray-600">
-    Please download, print, and fill the official consent form. Bring it along on the audition day.
-  </p>
+      <section className="text-center space-y-3">
+       <h3 className="text-lg font-semibold text-gray-800">Consent Form</h3>
+       <p className="text-sm text-gray-600">
+         Please download, print, and fill the official consent form. Bring it along on the audition day.
+       </p>
 
-  <a
-    href="/2025 Audition Consent Form.pdf"
-    download
-    target="_blank"
-    rel="noopener noreferrer"
-    className="inline-block bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
-  >
-    Download Consent Form
-  </a>
-</section>
+       <a
+        href="/2025 Audition Consent Form.pdf"
+       download
+       target="_blank"
+         rel="noopener noreferrer"
+       className="inline-block bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
+    >
+        Download Consent Form
+        </a>
+      </section>
 
         <button
           type="submit"
