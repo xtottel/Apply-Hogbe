@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import axios from "axios";
 
-const ARKESEL_API_KEY = process.env.ARKESEL_API_KEY || "your-api-key";
+const ARKESEL_API_KEY = process.env.ARKESEL_API_KEY || "YWF3ZHZIUnFSRVFpdnJOa1Bzc1U";
 const ADMIN_NUMBERS = ["233551196764", "233208930560"]; // Replace with actual admin numbers
 
 export async function POST(req: NextRequest) {
@@ -26,10 +26,10 @@ export async function POST(req: NextRequest) {
       await sendSMS(adminNumber, adminMessage);
     }
 
-    // TODO: Store the PIN in your MySQL database here
-    // You would typically have a database client setup to insert the record
+    // PIN is already stored in Supabase by the payment callback handler.
+    // This endpoint only handles SMS delivery.
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, message: "PIN delivered via SMS" });
   } catch (error) {
     console.error("SMS sending error:", error);
     return NextResponse.json(

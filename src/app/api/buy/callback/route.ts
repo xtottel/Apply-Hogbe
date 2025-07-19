@@ -5,17 +5,16 @@ import { supabase } from '@/lib/supabase';
 
 export async function POST(req: NextRequest) {
   try {
-    // No sequelize, using Supabase
     const body = await req.json();
     console.log('Hubtel Payment Callback:', body);
 
     // If payment was successful
     if (body?.ResponseCode === '0000' && body?.Data?.Status === 'Paid') {
       const { clientReference, payeeMobileNumber } = body.Data;
-      
+
       // Generate a random 4-digit PIN
       const pin = Math.floor(1000 + Math.random() * 9000).toString();
-      
+
       // Store PIN in Supabase
       const { error: pinError } = await supabase
         .from('pins')
@@ -27,34 +26,44 @@ export async function POST(req: NextRequest) {
         });
       if (pinError) {
         console.error('Failed to store PIN in Supabase:', pinError);
+        return NextResponse.json({
+          ResponseCode: 'PIN_DB_ERROR',
+          Status: 'Failed',
+          Data: { error: pinError.message }
+        }, { status: 500 });
       }
 
-      // Send SMS with the PIN (you'll call your SMS API here)
-      try {
-        const smsResponse = await fetch(`${process.env.NEXTAUTH_URL}/api/sms/pin`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            phone: payeeMobileNumber,
-            pin,
-          }),
-        });
+      // Send SMS with the PIN
+      const smsResponse = await fetch(`${process.env.NEXTAUTH_URL}/api/sms/pin`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          phone: payeeMobileNumber,
+          pin,
+        }),
+      });
 
-        if (!smsResponse.ok) {
-          console.error("Failed to send SMS:", await smsResponse.text());
-        }
-
-        // TODO: Store the PIN in your database along with clientReference
-        // This would typically be a MySQL insert operation
-
-      } catch (smsError) {
-        console.error("SMS sending failed:", smsError);
+      if (!smsResponse.ok) {
+        const smsErrorText = await smsResponse.text();
+        console.error("Failed to send SMS:", smsErrorText);
+        return NextResponse.json({
+          ResponseCode: 'SMS_ERROR',
+          Status: 'Failed',
+          Data: { error: smsErrorText }
+        }, { status: 500 });
       }
-    
+
+      // If everything succeeded, return success response
+      return NextResponse.json({
+        ResponseCode: '0000',
+        Status: 'Paid',
+        Data: { clientReference, payeeMobileNumber, pin }
+      });
     }
 
+    // For all other cases, return the original callback data
     return NextResponse.json({
       ResponseCode: body?.ResponseCode ?? '0000',
       Status: body?.Status ?? (body?.Data?.Status ?? 'Unknown'),

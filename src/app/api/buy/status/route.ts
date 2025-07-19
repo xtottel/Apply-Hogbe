@@ -5,17 +5,21 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const clientReference = searchParams.get("clientReference");
   if (!clientReference) {
-    return NextResponse.json({ error: "Missing clientReference" }, { status: 400 });
+    return NextResponse.json({
+      message: "Missing clientReference",
+      responseCode: "MISSING_CLIENT_REFERENCE",
+      data: null
+    }, { status: 400 });
   }
   try {
-    const merchantId = process.env.HUBTEL_MERCHANT_ID || "2030508"; 
+    const merchantId = process.env.HUBTEL_MERCHANT_ID || "2030508";
     const url = `https://api-txnstatus.hubtel.com/transactions/${merchantId}/status?clientReference=${clientReference}`;
     const hubtelRes = await fetch(url, {
       headers: {
         "Authorization": `Basic ${process.env.HUBTEL_BASIC_AUTH || "Mjl6OExSMTpiYTYyOGY2NzFmMDA0YmFhYjZiNmJlYTA4ZGZjZjQyZA=="}`,
       },
     });
-    
+
     let data;
     let text;
     try {
@@ -29,7 +33,8 @@ export async function GET(req: NextRequest) {
         data: text || null
       }, { status: 502 });
     }
-    // Log the status check result for auditing/debugging (console log, similar to callback)
+
+    // Log the status check result for auditing/debugging
     console.log("Hubtel Status Check Response:", data);
 
     // If the responseCode is not '0000', treat as a failed status check
@@ -38,7 +43,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({
         message: data?.message || "Failed to check status.",
         responseCode: data?.responseCode || "Unknown",
-        data: data?.data || null
+        data: data?.data || null,
+        status: data?.data?.status || null
       }, { status: 500 });
     }
 
@@ -49,7 +55,7 @@ export async function GET(req: NextRequest) {
         message: data?.message || `Status: ${status}`,
         responseCode: data?.responseCode || "0000",
         data: data?.data || null,
-        status: status
+        status
       });
     }
 
@@ -65,7 +71,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       message: "Status check error",
       responseCode: "ERROR",
-      data: null
+      data: null,
+      status: null
     }, { status: 500 });
   }
 }
