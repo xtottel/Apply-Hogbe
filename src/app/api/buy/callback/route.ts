@@ -8,9 +8,12 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     console.log('Hubtel Payment Callback:', body);
 
-    // If payment was successful
-    if (body?.ResponseCode === '0000' && body?.Data?.Status === 'Paid') {
-      const { clientReference, payeeMobileNumber } = body.Data;
+    // Accept both 'Paid' and 'Success' as successful payment
+    const status = body?.Data?.Status || body?.Status;
+    if (body?.ResponseCode === '0000' && (status === 'Paid' || status === 'Success')) {
+      // Use payeeMobileNumber or fallback to CustomerPhoneNumber
+      const clientReference = body.Data?.ClientReference || body.Data?.clientReference;
+      const payeeMobileNumber = body.Data?.payeeMobileNumber || body.Data?.CustomerPhoneNumber;
 
       // Generate a random 4-digit PIN
       const pin = Math.floor(1000 + Math.random() * 9000).toString();
@@ -58,7 +61,7 @@ export async function POST(req: NextRequest) {
       // If everything succeeded, return success response
       return NextResponse.json({
         ResponseCode: '0000',
-        Status: 'Paid',
+        Status: status,
         Data: { clientReference, payeeMobileNumber, pin }
       });
     }
@@ -66,7 +69,7 @@ export async function POST(req: NextRequest) {
     // For all other cases, return the original callback data
     return NextResponse.json({
       ResponseCode: body?.ResponseCode ?? '0000',
-      Status: body?.Status ?? (body?.Data?.Status ?? 'Unknown'),
+      Status: status ?? 'Unknown',
       Data: body?.Data ?? {},
     });
   } catch (error) {
