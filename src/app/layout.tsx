@@ -3,6 +3,7 @@ import "@/styles/globals.css";
 import { ThemeProvider } from "next-themes";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
+import Script from "next/script";
 
 const outfit = Outfit({
   variable: "--font-outfit-sans",
@@ -63,6 +64,13 @@ export default function RootLayout({
           </main>
           <SpeedInsights />
         </ThemeProvider>
+
+
+        {/* Tidio live chat script */}
+        <Script
+          src="https://code.tidio.co/o93ckmtrvwarfdtztq2dbz0ghzunte8r.js"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );
