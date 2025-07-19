@@ -4,7 +4,7 @@ import axios from "axios";
 
 const ARKESEL_API_KEY =
   process.env.ARKESEL_API_KEY || "YWF3ZHZIUnFSRVFpdnJOa1Bzc1U";
-const ADMIN_NUMBERS = ["233551196764", "233208930560"]; // Replace with actual admin numbers
+const ADMIN_NUMBERS = ["233245547479", "233545654059"]; // Replace with actual admin numbers
 
 export async function POST(req: NextRequest) {
   try {
