@@ -13,11 +13,27 @@ export async function POST(req: Request) {
       );
     }
 
+    // Normalize phone number to 233 format (no plus)
+    function normalizePhone(input: string) {
+      let phone = input.trim();
+      if (phone.startsWith("0")) {
+        phone = "233" + phone.slice(1);
+      } else if (phone.startsWith("+233")) {
+        phone = phone.replace("+233", "233");
+      } else if (!phone.startsWith("233")) {
+        // fallback: just add 233
+        phone = "233" + phone;
+      }
+      return phone;
+    }
+
+    const normalizedPhone = normalizePhone(phone);
+
     // Check if PIN exists
     const { data, error } = await supabase
       .from('pins')
       .select('*')
-      .eq('phone', phone)
+      .eq('phone', normalizedPhone)
       .eq('pin', pin)
       .single();
 

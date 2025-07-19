@@ -2,7 +2,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import axios from "axios";
 
-const ARKESEL_API_KEY = process.env.ARKESEL_API_KEY || "YWF3ZHZIUnFSRVFpdnJOa1Bzc1U";
+const ARKESEL_API_KEY =
+  process.env.ARKESEL_API_KEY || "YWF3ZHZIUnFSRVFpdnJOa1Bzc1U";
 const ADMIN_NUMBERS = ["233551196764", "233208930560"]; // Replace with actual admin numbers
 
 export async function POST(req: NextRequest) {
@@ -17,31 +18,28 @@ export async function POST(req: NextRequest) {
     }
 
     // Send SMS to user
-    const userMessage = `Your Mama Hogbe 2025 registration PIN is: ${pin}. Use this to complete your registration.`;
-    await sendSMS(phone, userMessage);
+    const userMessage = `Hi ${phone}, your PIN is ${pin}. Use it with your phone number to log in. Keep it safe.`;
+    await sendSMS(phone, userMessage, "Mama Hogbe");
 
     // Send notifications to admins
-    const adminMessage = `New PIN purchase: ${phone} with PIN ${pin}`;
+    const adminMessage = `New PIN purchase alert: ${phone} has successfully purchased a PIN. Please record for financial tracking.`;
     for (const adminNumber of ADMIN_NUMBERS) {
-      await sendSMS(adminNumber, adminMessage);
+      await sendSMS(adminNumber, adminMessage, "Xtottel Ltd");
     }
 
-    // PIN is already stored in Supabase by the payment callback handler.
-    // This endpoint only handles SMS delivery.
-
-    return NextResponse.json({ success: true, message: "PIN delivered via SMS" });
+    return NextResponse.json({
+      success: true,
+      message: "PIN delivered via SMS",
+    });
   } catch (error) {
     console.error("SMS sending error:", error);
-    return NextResponse.json(
-      { error: "Failed to send SMS" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to send SMS" }, { status: 500 });
   }
 }
 
-async function sendSMS(recipient: string, message: string) {
+async function sendSMS(recipient: string, message: string, sender: string) {
   const data = {
-    sender: "Mama Hogbe",
+    sender,
     message,
     recipients: [recipient],
   };
