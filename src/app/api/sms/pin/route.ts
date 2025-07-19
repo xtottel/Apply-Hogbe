@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     await sendSMS(phone, userMessage, "Mama Hogbe");
 
     // Send notifications to admins
-    const adminMessage = `New PIN purchase alert: ${phone} has successfully purchased a PIN. Please record for financial tracking.`;
+    const adminMessage = `New Mama Hogbe PIN purchase alert: ${phone} has successfully purchased a PIN. Please record for financial tracking.`;
     for (const adminNumber of ADMIN_NUMBERS) {
       await sendSMS(adminNumber, adminMessage, "Xtottel Ltd");
     }
