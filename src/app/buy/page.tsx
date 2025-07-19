@@ -24,7 +24,7 @@ export default function BuyPinPage() {
   const [pin] = useState("");
   const [, setShowModal] = useState(false);
   const [, setError] = React.useState<string | null>(null);
-  const paymentAmount = "GH₵ 100";
+  const paymentAmount = "GH₵ 2";
   // Store clientReference for status check
   const [, setClientReference] = useState<string | null>(null);
 
@@ -61,7 +61,7 @@ export default function BuyPinPage() {
       if (window.CheckoutSdk) {
         const checkout = new window.CheckoutSdk();
         const purchaseInfo = {
-          amount: 0.10, // Use actual amount
+          amount: 2, // Use actual amount
           purchaseDescription: "Mama Hogbe 2025 Registration Form Purchase",
           customerPhoneNumber: phone,
           clientReference: generatedReference,
@@ -70,7 +70,7 @@ export default function BuyPinPage() {
           branding: "enabled",
           callbackUrl:
             process.env.NEXT_PUBLIC_HUBTEL_CALLBACK_URL ||
-            "https://mamahogbe.sendexa.co/api/buy/callback",
+            "https://apply.mamahogbepageant.com/api/buy/callback",
           merchantAccount:
             Number(process.env.NEXT_PUBLIC_HUBTEL_MERCHANT_ID) || 2020861,
           basicAuth:
