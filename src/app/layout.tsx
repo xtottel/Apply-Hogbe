@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     siteName: "Mama Hogbe 2025",
     images: [
       {
-        url: "/Banner.jpg", // 🔁 Replace with your actual OG image in /public/og
+        url: "/101.jpg", // 🔁 Replace with your actual OG image in /public/og
         width: 1200,
         height: 630,
         alt: "Mama Hogbe 2025 Registration Portal",
