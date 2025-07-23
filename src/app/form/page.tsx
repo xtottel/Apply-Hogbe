@@ -1,59 +1,68 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import Image from 'next/image'
-import { Camera } from 'lucide-react'
+import { useState } from "react";
+import Image from "next/image";
+import { Camera } from "lucide-react";
+import { Input } from "@/ui/input";
+import { Textarea } from "@/ui/textarea";
+import  Button  from "@/ui/Button";
+import { Label } from "@/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/select";
+//import { useToast } from "@/ui/use-toast";
+//import { ToastAction } from "@/ui/toast";
 
 export default function RegisterPage() {
   const [form, setForm] = useState({
-    fullName: '',
-    dob: '',
-    age: '',
-    maritalStatus: '',
-    pob: '',
-    hometown: '',
-    homeDistrict: '',
-    grewUpAt: '',
-    currentResidence: '',
-    traditionalArea: '',
-    languages: '',
-    phone: '',
-    whatsapp: '',
-    email: '',
-    digitalAddress: '',
-    motherName: '',
-    motherPhone: '',
-    fatherName: '',
-    fatherPhone: '',
-    educationLevel: '',
-    schoolName: '',
-    cocurricular: '',
-    occupation: '',
-    hobbies: '',
-    hasPageantExperience: '',
-    auditionLocation: '',
-    pageantDetails: '',
-    whyContest: '',
-    whyBeMamaHogbe: '',
-    healthCondition: '',
+    fullName: "",
+    dob: "",
+    age: "",
+    maritalStatus: "",
+    pob: "",
+    hometown: "",
+    homeDistrict: "",
+    grewUpAt: "",
+    currentResidence: "",
+    traditionalArea: "",
+    languages: "",
+    phone: "",
+    whatsapp: "",
+    email: "",
+    digitalAddress: "",
+    motherName: "",
+    motherPhone: "",
+    fatherName: "",
+    fatherPhone: "",
+    educationLevel: "",
+    schoolName: "",
+    cocurricular: "",
+    occupation: "",
+    hobbies: "",
+    hasPageantExperience: "",
+    auditionLocation: "",
+    pageantDetails: "",
+    whyContest: "",
+    whyBeMamaHogbe: "",
+    healthCondition: "",
     photo: null as File | null,
-  })
+  });
 
-  const [submitted, setSubmitted] = useState(false)
-  const [loading, setLoading] = useState(false)
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => {
-    const { name, value } = e.target
-    setForm((prev) => ({ ...prev, [name]: value }))
-  }
-
+  const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
+  // const { toast } = useToast();
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSelectChange = (name: string, value: string) => {
+    setForm(prev => ({ ...prev, [name]: value }));
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
-    setForm((prev) => ({ ...prev, photo: file }));
+    setForm(prev => ({ ...prev, photo: file }));
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => setPreview(reader.result as string);
@@ -63,31 +72,111 @@ export default function RegisterPage() {
     }
   };
 
-
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
+    e.preventDefault();
+    setLoading(true);
 
     try {
-      // TODO: Send to backend
-      console.log('Submitted:', form)
-      setSubmitted(true)
+      // Convert image to base64 for Supabase storage
+      let photoUrl = "";
+      if (form.photo) {
+        const base64Photo = await convertFileToBase64(form.photo);
+        photoUrl = await uploadPhotoToSupabase(base64Photo, form.phone);
+      }
+
+      const submissionData = {
+        ...form,
+        photoUrl: photoUrl || null,
+        clientReference: form.phone,
+      };
+
+      const response = await fetch("/api/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(submissionData),
+      });
+
+      if (!response.ok) {
+        throw new Error("Submission failed");
+      }
+
+      // Send SMS confirmation
+      await fetch("/api/sms/success", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          phone: form.phone,
+          fullName: form.fullName,
+        }),
+      });
+
+      setSubmitted(true);
+      // toast({
+      //   title: "Registration Successful",
+      //   description: "Thank you for registering for Mama Hogbe 2025.",
+      // });
     } catch (error) {
-      console.error('Submission failed:', error)
+      console.error("Submission failed:", error);
+      // toast({
+      //   variant: "destructive",
+      //   title: "Submission Failed",
+      //   description: "There was an error submitting your form. Please try again.",
+      //   action: <ToastAction altText="Try again">Try again</ToastAction>,
+      // });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
+
+  const convertFileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
+  const uploadPhotoToSupabase = async (base64Image: string, phone: string): Promise<string> => {
+    try {
+      const response = await fetch("/api/upload-photo", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          image: base64Image,
+          filename: `profile_${phone}_${Date.now()}.jpg`,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Photo upload failed");
+      }
+
+      const data = await response.json();
+      return data.url;
+    } catch (error) {
+      console.error("Upload error:", error);
+      return "";
+    }
+  };
 
   if (submitted) {
     return (
       <main className="min-h-screen flex items-center justify-center px-4">
         <div className="text-center space-y-4">
           <h1 className="text-2xl font-semibold">🎉 Registration Complete</h1>
-          <p className="text-gray-600">Thank you for registering for Mama Hogbe 2025.</p>
+          <p className="text-gray-600">
+            Thank you for registering for Mama Hogbe 2025.
+          </p>
         </div>
       </main>
-    )
+    );
   }
 
   return (
@@ -107,215 +196,432 @@ export default function RegisterPage() {
         />
 
         <p className="text-sm text-gray-600">
-          Please fill out the form below to register for the Mama Hogbe 2025 auditions.
-          Ensure all information is accurate and complete.
+          Please fill out the form below to register for the Mama Hogbe 2025
+          auditions. Ensure all information is accurate and complete.
           <br />
-          <span className="text-red-500 font-semibold">Note: This is not the official consent form.</span>
+          <span className="text-red-500 font-semibold">
+            Note: This is not the official consent form.
+          </span>
           <br />
-          You will need to download and fill the official consent form separately.
+          You will need to download and fill the official consent form
+          separately.
         </p>
-
-
 
         {/* Section A: Personal Info */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Input label="Full Name" name="fullName" value={form.fullName} onChange={handleChange} required />
-          <Input label="Date of Birth" name="dob" type="date" value={form.dob} onChange={handleChange} required />
-          <Input label="Age" name="age" type="number" value={form.age} onChange={handleChange} required />
-          <Input label="Marital Status" name="maritalStatus" value={form.maritalStatus} onChange={handleChange} required />
-          <Input label="Place of Birth" name="pob" value={form.pob} onChange={handleChange} required />
-          <Input label="Hometown" name="hometown" value={form.hometown} onChange={handleChange} required />
-          <Input label="Home District" name="homeDistrict" value={form.homeDistrict} onChange={handleChange} required />
-          <Input label="Where did you grow up?" name="grewUpAt" value={form.grewUpAt} onChange={handleChange} required />
-          <Input label="Current Residence / Work" name="currentResidence" value={form.currentResidence} onChange={handleChange} required />
-          <Input label="Traditional Area / 36 Town State" name="traditionalArea" value={form.traditionalArea} onChange={handleChange} required />
-          <Input label="Languages Spoken" name="languages" value={form.languages} onChange={handleChange} required />
+          <div className="space-y-1">
+            <Label htmlFor="fullName">Full Name *</Label>
+            <Input
+              id="fullName"
+              name="fullName"
+              value={form.fullName}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          
+          <div className="space-y-1">
+            <Label htmlFor="dob">Date of Birth *</Label>
+            <Input
+              id="dob"
+              name="dob"
+              type="date"
+              value={form.dob}
+              onChange={handleChange}
+              required
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="age">Age *</Label>
+            <Input
+              id="age"
+              name="age"
+              type="number"
+              value={form.age}
+              onChange={handleChange}
+              required
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="maritalStatus">Marital Status *</Label>
+            <Input
+              id="maritalStatus"
+              name="maritalStatus"
+              value={form.maritalStatus}
+              onChange={handleChange}
+              required
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="pob">Place of Birth *</Label>
+            <Input
+              id="pob"
+              name="pob"
+              value={form.pob}
+              onChange={handleChange}
+              required
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="hometown">Hometown *</Label>
+            <Input
+              id="hometown"
+              name="hometown"
+              value={form.hometown}
+              onChange={handleChange}
+              required
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="homeDistrict">Home District *</Label>
+            <Input
+              id="homeDistrict"
+              name="homeDistrict"
+              value={form.homeDistrict}
+              onChange={handleChange}
+              required
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="grewUpAt">Where did you grow up? *</Label>
+            <Input
+              id="grewUpAt"
+              name="grewUpAt"
+              value={form.grewUpAt}
+              onChange={handleChange}
+              required
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="currentResidence">Current Residence / Work *</Label>
+            <Input
+              id="currentResidence"
+              name="currentResidence"
+              value={form.currentResidence}
+              onChange={handleChange}
+              required
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="traditionalArea">Traditional Area / 36 Town State *</Label>
+            <Input
+              id="traditionalArea"
+              name="traditionalArea"
+              value={form.traditionalArea}
+              onChange={handleChange}
+              required
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="languages">Languages Spoken *</Label>
+            <Input
+              id="languages"
+              name="languages"
+              value={form.languages}
+              onChange={handleChange}
+              required
+            />
+          </div>
         </div>
 
         {/* Contact Details */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Input label="Phone Number" name="phone" value={form.phone} onChange={handleChange} required />
-          <Input label="WhatsApp Number" name="whatsapp" value={form.whatsapp} onChange={handleChange} />
-          <Input label="Email Address" name="email" type="email" value={form.email} onChange={handleChange} />
-          <Input label="Digital Address" name="digitalAddress" value={form.digitalAddress} onChange={handleChange} />
-          <Input label="Mother's Name" name="motherName" value={form.motherName} onChange={handleChange} required />
-          <Input label="Mother's Phone" name="motherPhone" value={form.motherPhone} onChange={handleChange} required />
-          <Input label="Father's / Guardian's Name" name="fatherName" value={form.fatherName} onChange={handleChange} required />
-          <Input label="Father's Phone" name="fatherPhone" value={form.fatherPhone} onChange={handleChange} required />
+          <div className="space-y-1">
+            <Label htmlFor="phone">Phone Number *</Label>
+            <Input
+              id="phone"
+              name="phone"
+              value={form.phone}
+              onChange={handleChange}
+              required
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="whatsapp">WhatsApp Number</Label>
+            <Input
+              id="whatsapp"
+              name="whatsapp"
+              value={form.whatsapp}
+              onChange={handleChange}
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="email">Email Address</Label>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              value={form.email}
+              onChange={handleChange}
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="digitalAddress">Digital Address</Label>
+            <Input
+              id="digitalAddress"
+              name="digitalAddress"
+              value={form.digitalAddress}
+              onChange={handleChange}
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="motherName">Mother&apos;s Name *</Label>
+            <Input
+              id="motherName"
+              name="motherName"
+              value={form.motherName}
+              onChange={handleChange}
+              required
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="motherPhone">Mother&apos;s Phone *</Label>
+            <Input
+              id="motherPhone"
+              name="motherPhone"
+              value={form.motherPhone}
+              onChange={handleChange}
+              required
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="fatherName">Father&apos;s / Guardian&apos;s Name *</Label>
+            <Input
+              id="fatherName"
+              name="fatherName"
+              value={form.fatherName}
+              onChange={handleChange}
+              required
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="fatherPhone">Father&apos;s Phone *</Label>
+            <Input
+              id="fatherPhone"
+              name="fatherPhone"
+              value={form.fatherPhone}
+              onChange={handleChange}
+              required
+            />
+          </div>
         </div>
 
         {/* Education & Occupation */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium">Highest Level of Education</label>
-          <select
-            name="educationLevel"
+        <div className="space-y-1">
+          <Label>Highest Level of Education *</Label>
+          <Select
             value={form.educationLevel}
-            onChange={handleChange}
-            className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+            onValueChange={(value) => handleSelectChange("educationLevel", value)}
             required
           >
-            <option value="">Select one</option>
-            <option value="JHS">JHS</option>
-            <option value="SHS">SHS</option>
-            <option value="Tertiary">Tertiary</option>
-            <option value="Other">Other</option>
-          </select>
+            <SelectTrigger>
+              <SelectValue placeholder="Select one" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="JHS">JHS</SelectItem>
+              <SelectItem value="SHS">SHS</SelectItem>
+              <SelectItem value="Tertiary">Tertiary</SelectItem>
+              <SelectItem value="Other">Other</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
-        <Input label="Name of School / Institution" name="schoolName" value={form.schoolName} onChange={handleChange} />
-        <Input label="Co-Curricular Activity / Position Held" name="cocurricular" value={form.cocurricular} onChange={handleChange} />
-        <Input label="Occupation" name="occupation" value={form.occupation} onChange={handleChange} />
+        <div className="space-y-1">
+          <Label htmlFor="schoolName">Name of School / Institution</Label>
+          <Input
+            id="schoolName"
+            name="schoolName"
+            value={form.schoolName}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div className="space-y-1">
+          <Label htmlFor="cocurricular">Co-Curricular Activity / Position Held</Label>
+          <Input
+            id="cocurricular"
+            name="cocurricular"
+            value={form.cocurricular}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div className="space-y-1">
+          <Label htmlFor="occupation">Occupation</Label>
+          <Input
+            id="occupation"
+            name="occupation"
+            value={form.occupation}
+            onChange={handleChange}
+          />
+        </div>
 
         {/* Interests & Goals */}
-        <Input label="Hobbies / Talents" name="hobbies" value={form.hobbies} onChange={handleChange} />
+        <div className="space-y-1">
+          <Label htmlFor="hobbies">Hobbies / Talents</Label>
+          <Input
+            id="hobbies"
+            name="hobbies"
+            value={form.hobbies}
+            onChange={handleChange}
+          />
+        </div>
 
-        <div className="space-y-2">
-          <label className="block text-sm font-medium">Have you participated in a pageant before?</label>
-          <select
-            name="hasPageantExperience"
+        <div className="space-y-1">
+          <Label>Have you participated in a pageant before? *</Label>
+          <Select
             value={form.hasPageantExperience}
-            onChange={handleChange}
-            className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+            onValueChange={(value) => handleSelectChange("hasPageantExperience", value)}
             required
           >
-            <option value="">Select</option>
-            <option value="Yes">Yes</option>
-            <option value="No">No</option>
-          </select>
+            <SelectTrigger>
+              <SelectValue placeholder="Select" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Yes">Yes</SelectItem>
+              <SelectItem value="No">No</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
-        <div className="space-y-2">
-          <label className="block text-sm font-medium">Where do you want to attend the audition?</label>
-          <select
-            name="auditionLocation"
+        <div className="space-y-1">
+          <Label>Where do you want to attend the audition? *</Label>
+          <Select
             value={form.auditionLocation}
-            onChange={handleChange}
-            className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+            onValueChange={(value) => handleSelectChange("auditionLocation", value)}
             required
           >
-
-            <option value="">Select</option>
-            <option value="Dzodze">Dzodze</option>
-            <option value="Abor">Abor</option>
-            <option value="Denu">Denu</option>
-            <option value="Agbozume">Agbozume</option>
-            <option value="Anloga">Anloga</option>
-          </select>
+            <SelectTrigger>
+              <SelectValue placeholder="Select location" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Dzodze">Dzodze</SelectItem>
+              <SelectItem value="Abor">Abor</SelectItem>
+              <SelectItem value="Denu">Denu</SelectItem>
+              <SelectItem value="Agbozume">Agbozume</SelectItem>
+              <SelectItem value="Anloga">Anloga</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
-        <Input label="If yes, state which one and the year" name="pageantDetails" value={form.pageantDetails} onChange={handleChange} />
-        <TextArea label="Why do you want to contest and win Mama Hogbe Crown?" name="whyContest" value={form.whyContest} onChange={handleChange} />
-        <TextArea label="Why do you want to be Mama Hogbe?" name="whyBeMamaHogbe" value={form.whyBeMamaHogbe} onChange={handleChange} />
-        <Input label="Do you have any health conditions?" name="healthCondition" value={form.healthCondition} onChange={handleChange} />
-
-
-        <div className="space-y-2">
-      <label className="block text-sm font-medium text-gray-700">Upload Profile Photo</label>
-
-      <div className="flex items-center gap-4">
-        <div className="relative w-24 h-24 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden bg-gray-50">
-          {preview ? (
-            <Image
-              fill
-              src={preview}
-              alt="Preview"
-              className="object-cover w-full h-full rounded-full"
+        {form.hasPageantExperience === "Yes" && (
+          <div className="space-y-1">
+            <Label htmlFor="pageantDetails">If yes, state which one and the year</Label>
+            <Input
+              id="pageantDetails"
+              name="pageantDetails"
+              value={form.pageantDetails}
+              onChange={handleChange}
             />
-          ) : (
-            <Camera className="h-6 w-6 text-gray-400" />
-          )}
+          </div>
+        )}
+
+        <div className="space-y-1">
+          <Label htmlFor="whyContest">Why do you want to contest and win Mama Hogbe Crown? *</Label>
+          <Textarea
+            id="whyContest"
+            name="whyContest"
+            value={form.whyContest}
+            onChange={handleChange}
+            rows={4}
+            required
+          />
         </div>
 
-        <input
-          type="file"
-          accept="image/*"
-          onChange={handleFileChange}
-          className="block text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100"
-          required
-        />
-      </div>
-    </div>
+        <div className="space-y-1">
+          <Label htmlFor="whyBeMamaHogbe">Why do you want to be Mama Hogbe? *</Label>
+          <Textarea
+            id="whyBeMamaHogbe"
+            name="whyBeMamaHogbe"
+            value={form.whyBeMamaHogbe}
+            onChange={handleChange}
+            rows={4}
+            required
+          />
+        </div>
 
-                <hr className="my-8" />
+        <div className="space-y-1">
+          <Label htmlFor="healthCondition">Do you have any health conditions?</Label>
+          <Input
+            id="healthCondition"
+            name="healthCondition"
+            value={form.healthCondition}
+            onChange={handleChange}
+          />
+        </div>
 
-      <section className="text-center space-y-3">
-       <h3 className="text-lg font-semibold text-gray-800">Consent Form</h3>
-       <p className="text-sm text-gray-600">
-         Please download, print, and fill the official consent form. Bring it along on the audition day.
-       </p>
+        {/* File Upload */}
+        <div className="space-y-2">
+          <Label>Upload Profile Photo *</Label>
+          <div className="flex items-center gap-4">
+            <div className="relative w-24 h-24 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden bg-gray-50">
+              {preview ? (
+                <Image
+                  fill
+                  src={preview}
+                  alt="Preview"
+                  className="object-cover w-full h-full rounded-full"
+                />
+              ) : (
+                <Camera className="h-6 w-6 text-gray-400" />
+              )}
+            </div>
+            <div className="flex-1">
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="cursor-pointer"
+                required
+              />
+            </div>
+          </div>
+        </div>
 
-       <a
-        href="/2025 Audition Consent Form.pdf"
-       download
-       target="_blank"
-         rel="noopener noreferrer"
-       className="inline-block bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
-    >
-        Download Consent Form
-        </a>
-      </section>
+        <hr className="my-8" />
 
-        <button
+        <section className="text-center space-y-3">
+          <h3 className="text-lg font-semibold text-gray-800">Consent Form</h3>
+          <p className="text-sm text-gray-600">
+            Please download, print, and fill the official consent form. Bring it
+            along on the audition day.
+          </p>
+          <Button asChild variant="primary">
+            <a
+              href="/2025 Audition Consent Form.pdf"
+              download
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Download Consent Form
+            </a>
+          </Button>
+        </section>
+
+        <Button
           type="submit"
           disabled={loading}
-          className="w-full bg-black text-white py-2 rounded hover:opacity-90 transition"
+          className="w-full"
         >
-          {loading ? 'Submitting...' : 'Submit Registration'}
-        </button>
-
-
-
-
+          {loading ? "Submitting..." : "Submit Registration"}
+        </Button>
       </form>
     </main>
-  )
-}
-
-// 🔧 Helper Components
-interface InputProps {
-  label: string
-  name: string
-  value: string | number
-  onChange: React.ChangeEventHandler<HTMLInputElement>
-  type?: string
-  required?: boolean
-}
-
-function Input({ label, name, value, onChange, type = 'text', required = false }: InputProps) {
-  return (
-    <div className="space-y-1">
-      <label className="block text-sm font-medium">{label}</label>
-      <input
-        name={name}
-        type={type}
-        value={value}
-        onChange={onChange}
-        className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
-        required={required}
-      />
-    </div>
-  )
-}
-
-interface TextAreaProps {
-  label: string
-  name: string
-  value: string
-  onChange: React.ChangeEventHandler<HTMLTextAreaElement>
-}
-
-function TextArea({ label, name, value, onChange }: TextAreaProps) {
-  return (
-    <div className="space-y-1">
-      <label className="block text-sm font-medium">{label}</label>
-      <textarea
-        name={name}
-        rows={3}
-        value={value}
-        onChange={onChange}
-        className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
-        required
-      />
-    </div>
-  )
+  );
 }
