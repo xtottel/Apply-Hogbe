@@ -34,12 +34,12 @@ export async function POST(req: NextRequest) {
       description,
       callbackUrl:
         process.env.HUBTEL_CALLBACK_URL ??
-        "https://mamahogbe.sendexa.co/api/buy/callback",
+        "https://apply.mamahogbepageant.com/api/buy/callback",
       returnUrl:
-        process.env.HUBTEL_RETURN_URL ?? "https://mamahogbe.sendexa.co/",
+        process.env.HUBTEL_RETURN_URL ?? "https://apply.mamahogbepageant.com/",
       merchantAccountNumber: process.env.HUBTEL_MERCHANT_ID ?? "2020861",
       cancellationUrl:
-        process.env.HUBTEL_CANCEL_URL ?? "https://mamahogbe.sendexa.co",
+        process.env.HUBTEL_CANCEL_URL ?? "https://apply.mamahogbepageant.com/",
       clientReference: clientReference || `MH25_${Date.now()}`.slice(0, 32),
       payeeName: FullName || undefined,
       payeeMobileNumber: Phone || undefined,

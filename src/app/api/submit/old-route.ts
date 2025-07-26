@@ -1,14 +1,11 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
-
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(request: Request) {
   try {
@@ -76,8 +73,8 @@ export async function POST(request: Request) {
 
     if (pinUpdateError) throw pinUpdateError;
 
-    // Send email notification using Resend
-    await sendRegistrationEmail(formData);
+    // Send email notification
+    await sendEmail(formData);
 
     return NextResponse.json({
       success: true,
@@ -94,33 +91,30 @@ export async function POST(request: Request) {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function sendRegistrationEmail(formData: any) {
-  try {
-    const emailHtml = generateEmailHtml(formData);
-    
-    const emailOptions = {
-      from: `Mama Hogbe <${process.env.EMAIL_FROM}>`,
-      to: process.env.ADMIN_EMAIL!,
-      subject: `New Registration: ${formData.fullName}`,
-      html: emailHtml,
-    };
+async function sendEmail(formData: any) {
+  // Configure email transporter for your domain
+  const transporter = nodemailer.createTransport({
+    host: process.env.EMAIL_SERVER_HOST,
+    port: parseInt(process.env.EMAIL_SERVER_PORT || '587'),
+    secure: process.env.EMAIL_SECURE === 'true', // true for 465, false for other ports
+    auth: {
+      user: process.env.EMAIL_SERVER_USER,
+      pass: process.env.EMAIL_SERVER_PASSWORD,
+    },
+  });
 
-    // Add attachment if photoUrl exists
-    const emailWithAttachment = formData.photoUrl 
-      ? {
-          ...emailOptions,
-          attachments: [{
-            filename: 'profile.jpg',
-            path: formData.photoUrl
-          }]
-        }
-      : emailOptions;
+  const mailOptions = {
+    from: `"Mama Hogbe" <${process.env.EMAIL_FROM}>`,
+    to: process.env.ADMIN_EMAIL,
+    subject: `New Registration: ${formData.fullName}`,
+    html: generateEmailHtml(formData),
+    attachments: formData.photoUrl ? [{
+      filename: 'profile.jpg',
+      path: formData.photoUrl
+    }] : []
+  };
 
-    await resend.emails.send(emailWithAttachment);
-  } catch (error) {
-    console.error('Error sending email:', error);
-    // Don't fail the request if email fails
-  }
+  await transporter.sendMail(mailOptions);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -212,3 +206,4 @@ function generateEmailHtml(formData: any): string {
     </html>
   `;
 }
+

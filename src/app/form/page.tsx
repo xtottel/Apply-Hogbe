@@ -5,11 +5,15 @@ import Image from "next/image";
 import { Camera } from "lucide-react";
 import { Input } from "@/ui/input";
 import { Textarea } from "@/ui/textarea";
-import  Button  from "@/ui/Button";
+import Button from "@/ui/Button";
 import { Label } from "@/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/select";
-//import { useToast } from "@/ui/use-toast";
-//import { ToastAction } from "@/ui/toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/ui/select";
 
 export default function RegisterPage() {
   const [form, setForm] = useState({
@@ -49,20 +53,21 @@ export default function RegisterPage() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
-  // const { toast } = useToast();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSelectChange = (name: string, value: string) => {
-    setForm(prev => ({ ...prev, [name]: value }));
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
-    setForm(prev => ({ ...prev, photo: file }));
+    setForm((prev) => ({ ...prev, photo: file }));
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => setPreview(reader.result as string);
@@ -115,18 +120,8 @@ export default function RegisterPage() {
       });
 
       setSubmitted(true);
-      // toast({
-      //   title: "Registration Successful",
-      //   description: "Thank you for registering for Mama Hogbe 2025.",
-      // });
     } catch (error) {
       console.error("Submission failed:", error);
-      // toast({
-      //   variant: "destructive",
-      //   title: "Submission Failed",
-      //   description: "There was an error submitting your form. Please try again.",
-      //   action: <ToastAction altText="Try again">Try again</ToastAction>,
-      // });
     } finally {
       setLoading(false);
     }
@@ -141,7 +136,10 @@ export default function RegisterPage() {
     });
   };
 
-  const uploadPhotoToSupabase = async (base64Image: string, phone: string): Promise<string> => {
+  const uploadPhotoToSupabase = async (
+    base64Image: string,
+    phone: string
+  ): Promise<string> => {
     try {
       const response = await fetch("/api/upload-photo", {
         method: "POST",
@@ -219,7 +217,7 @@ export default function RegisterPage() {
               required
             />
           </div>
-          
+
           <div className="space-y-1">
             <Label htmlFor="dob">Date of Birth *</Label>
             <Input
@@ -311,7 +309,9 @@ export default function RegisterPage() {
           </div>
 
           <div className="space-y-1">
-            <Label htmlFor="traditionalArea">Traditional Area / 36 Town State *</Label>
+            <Label htmlFor="traditionalArea">
+              Traditional Area / 36 Town State *
+            </Label>
             <Input
               id="traditionalArea"
               name="traditionalArea"
@@ -400,7 +400,9 @@ export default function RegisterPage() {
           </div>
 
           <div className="space-y-1">
-            <Label htmlFor="fatherName">Father&apos;s / Guardian&apos;s Name *</Label>
+            <Label htmlFor="fatherName">
+              Father&apos;s / Guardian&apos;s Name *
+            </Label>
             <Input
               id="fatherName"
               name="fatherName"
@@ -427,7 +429,9 @@ export default function RegisterPage() {
           <Label>Highest Level of Education *</Label>
           <Select
             value={form.educationLevel}
-            onValueChange={(value) => handleSelectChange("educationLevel", value)}
+            onValueChange={(value) =>
+              handleSelectChange("educationLevel", value)
+            }
             required
           >
             <SelectTrigger>
@@ -453,7 +457,9 @@ export default function RegisterPage() {
         </div>
 
         <div className="space-y-1">
-          <Label htmlFor="cocurricular">Co-Curricular Activity / Position Held</Label>
+          <Label htmlFor="cocurricular">
+            Co-Curricular Activity / Position Held
+          </Label>
           <Input
             id="cocurricular"
             name="cocurricular"
@@ -487,7 +493,9 @@ export default function RegisterPage() {
           <Label>Have you participated in a pageant before? *</Label>
           <Select
             value={form.hasPageantExperience}
-            onValueChange={(value) => handleSelectChange("hasPageantExperience", value)}
+            onValueChange={(value) =>
+              handleSelectChange("hasPageantExperience", value)
+            }
             required
           >
             <SelectTrigger>
@@ -504,7 +512,9 @@ export default function RegisterPage() {
           <Label>Where do you want to attend the audition? *</Label>
           <Select
             value={form.auditionLocation}
-            onValueChange={(value) => handleSelectChange("auditionLocation", value)}
+            onValueChange={(value) =>
+              handleSelectChange("auditionLocation", value)
+            }
             required
           >
             <SelectTrigger>
@@ -522,7 +532,9 @@ export default function RegisterPage() {
 
         {form.hasPageantExperience === "Yes" && (
           <div className="space-y-1">
-            <Label htmlFor="pageantDetails">If yes, state which one and the year</Label>
+            <Label htmlFor="pageantDetails">
+              If yes, state which one and the year
+            </Label>
             <Input
               id="pageantDetails"
               name="pageantDetails"
@@ -533,7 +545,9 @@ export default function RegisterPage() {
         )}
 
         <div className="space-y-1">
-          <Label htmlFor="whyContest">Why do you want to contest and win Mama Hogbe Crown? *</Label>
+          <Label htmlFor="whyContest">
+            Why do you want to contest and win Mama Hogbe Crown? *
+          </Label>
           <Textarea
             id="whyContest"
             name="whyContest"
@@ -545,7 +559,9 @@ export default function RegisterPage() {
         </div>
 
         <div className="space-y-1">
-          <Label htmlFor="whyBeMamaHogbe">Why do you want to be Mama Hogbe? *</Label>
+          <Label htmlFor="whyBeMamaHogbe">
+            Why do you want to be Mama Hogbe? *
+          </Label>
           <Textarea
             id="whyBeMamaHogbe"
             name="whyBeMamaHogbe"
@@ -557,7 +573,9 @@ export default function RegisterPage() {
         </div>
 
         <div className="space-y-1">
-          <Label htmlFor="healthCondition">Do you have any health conditions?</Label>
+          <Label htmlFor="healthCondition">
+            Do you have any health conditions?
+          </Label>
           <Input
             id="healthCondition"
             name="healthCondition"
@@ -614,11 +632,7 @@ export default function RegisterPage() {
           </Button>
         </section>
 
-        <Button
-          type="submit"
-          disabled={loading}
-          className="w-full"
-        >
+        <Button type="submit" disabled={loading} className="w-full">
           {loading ? "Submitting..." : "Submit Registration"}
         </Button>
       </form>

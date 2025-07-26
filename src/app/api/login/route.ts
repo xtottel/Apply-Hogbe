@@ -1,4 +1,3 @@
-// route.ts
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
@@ -8,49 +7,64 @@ export async function POST(req: Request) {
 
     if (!phone || !pin) {
       return NextResponse.json(
-        { success: false, message: 'Phone and PIN are required' },
+        { success: false, message: 'Phone and PIN are required.' },
         { status: 400 }
       );
     }
 
-    // Normalize phone number to 233 format (no plus)
-    function normalizePhone(input: string) {
-      let phone = input.trim();
-      if (phone.startsWith("0")) {
-        phone = "233" + phone.slice(1);
-      } else if (phone.startsWith("+233")) {
-        phone = phone.replace("+233", "233");
-      } else if (!phone.startsWith("233")) {
-        // fallback: just add 233
-        phone = "233" + phone;
-      }
-      return phone;
-    }
-
-    const normalizedPhone = normalizePhone(phone);
-
-    // Check if PIN exists
-    const { data, error } = await supabase
-      .from('pins')
-      .select('*')
-      .eq('phone', normalizedPhone)
-      .eq('pin', pin)
+    // Step 1: Check if user exists with the phone number
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('id, pin, used_pin')
+      .eq('phone', phone.trim())
       .single();
 
-    if (error || !data) {
+    if (userError || !user) {
       return NextResponse.json(
-        { success: false, message: 'Invalid credentials' },
+        { success: false, message: 'Phone number not registered.' },
+        { status: 404 }
+      );
+    }
+
+    // Step 2: Check if the PIN matches
+    if (user.pin !== pin) {
+      return NextResponse.json(
+        { success: false, message: 'Incorrect PIN.' },
         { status: 401 }
       );
     }
 
-    // Create a redirect response
-    const response = NextResponse.redirect(new URL('/form', req.url));
-    
-    // Set cookie
-    response.cookies.set('auth_token', 'authenticated', {
+    // Step 3: Check if PIN was already used
+    if (user.used_pin) {
+      return NextResponse.json(
+        { success: false, message: 'PIN has already been used.' },
+        { status: 403 }
+      );
+    }
+
+    // Optional: Mark the PIN as used
+    await supabase
+      .from('users')
+      .update({ used_pin: true })
+      .eq('id', user.id);
+
+    // Create success response with cookies
+    const response = NextResponse.json(
+      { success: true, message: 'Login successful.' },
+      { status: 200 }
+    );
+
+    response.cookies.set('auth_token', user.id.toString(), {
       path: '/',
-      maxAge: 86400, // 1 day
+      maxAge: 60 * 60 * 24,
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+    });
+
+    response.cookies.set('authenticated', 'true', {
+      path: '/',
+      maxAge: 60 * 60 * 24,
       sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',
     });
@@ -60,7 +74,7 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error('Login error:', error);
     return NextResponse.json(
-      { success: false, message: 'Internal server error' },
+      { success: false, message: 'Internal server error. Please try again.' },
       { status: 500 }
     );
   }
