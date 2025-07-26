@@ -1,6 +1,136 @@
+// "use client";
+
+// import { useState } from "react";
+// import Image from "next/image";
+// import { Camera } from "lucide-react";
+// import { Input } from "@/ui/input";
+// import { Textarea } from "@/ui/textarea";
+// import Button from "@/ui/Button";
+// import { Label } from "@/ui/label";
+// import {
+//   Select,
+//   SelectContent,
+//   SelectItem,
+//   SelectTrigger,
+//   SelectValue,
+// } from "@/ui/select";
+
+// export default function RegisterPage() {
+//   const [form, setForm] = useState({
+//     fullName: "",
+//     dob: "",
+//     age: "",
+//     maritalStatus: "",
+//     pob: "",
+//     hometown: "",
+//     homeDistrict: "",
+//     grewUpAt: "",
+//     currentResidence: "",
+//     traditionalArea: "",
+//     languages: "",
+//     phone: "",
+//     whatsapp: "",
+//     email: "",
+//     digitalAddress: "",
+//     motherName: "",
+//     motherPhone: "",
+//     fatherName: "",
+//     fatherPhone: "",
+//     educationLevel: "",
+//     schoolName: "",
+//     cocurricular: "",
+//     occupation: "",
+//     hobbies: "",
+//     hasPageantExperience: "",
+//     auditionLocation: "",
+//     pageantDetails: "",
+//     whyContest: "",
+//     whyBeMamaHogbe: "",
+//     healthCondition: "",
+//     photo: null as File | null,
+//   });
+
+//   const [submitted, setSubmitted] = useState(false);
+//   const [loading, setLoading] = useState(false);
+//   const [preview, setPreview] = useState<string | null>(null);
+
+//   const handleChange = (
+//     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+//   ) => {
+//     const { name, value } = e.target;
+//     setForm((prev) => ({ ...prev, [name]: value }));
+//   };
+
+//   const handleSelectChange = (name: string, value: string) => {
+//     setForm((prev) => ({ ...prev, [name]: value }));
+//   };
+
+//   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+//     const file = e.target.files?.[0] || null;
+//     setForm((prev) => ({ ...prev, photo: file }));
+//     if (file) {
+//       const reader = new FileReader();
+//       reader.onloadend = () => setPreview(reader.result as string);
+//       reader.readAsDataURL(file);
+//     } else {
+//       setPreview(null);
+//     }
+//   };
+
+//   const handleSubmit = async (e: React.FormEvent) => {
+//     e.preventDefault();
+//     setLoading(true);
+
+//     try {
+//       // Convert image to base64 for Supabase storage
+//       let photoUrl = "";
+//       if (form.photo) {
+//         const base64Photo = await convertFileToBase64(form.photo);
+//         photoUrl = await uploadPhotoToSupabase(base64Photo, form.phone);
+//       }
+
+//       const submissionData = {
+//         ...form,
+//         photoUrl: photoUrl || null,
+//         clientReference: form.phone,
+//       };
+
+//       const response = await fetch("/api/submit", {
+//         method: "POST",
+//         headers: {
+//           "Content-Type": "application/json",
+//         },
+//         body: JSON.stringify(submissionData),
+//       });
+
+//       if (!response.ok) {
+//         throw new Error("Submission failed");
+//       }
+
+//       // Send SMS confirmation
+//       await fetch("/api/sms/success", {
+//         method: "POST",
+//         headers: {
+//           "Content-Type": "application/json",
+//         },
+//         body: JSON.stringify({
+//           phone: form.phone,
+//           fullName: form.fullName,
+//         }),
+//       });
+
+//       setSubmitted(true);
+//     } catch (error) {
+//       console.error("Submission failed:", error);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { Camera } from "lucide-react";
 import { Input } from "@/ui/input";
@@ -14,8 +144,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/ui/select";
+import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function RegisterPage() {
+  const router = useRouter();
+  const [userPhone, setUserPhone] = useState<string | null>(null);
   const [form, setForm] = useState({
     fullName: "",
     dob: "",
@@ -53,6 +188,34 @@ export default function RegisterPage() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Check if user is logged in by checking cookies or local storage
+    const checkAuth = async () => {
+      try {
+        const response = await fetch('/api/auth/check', {
+          method: 'GET',
+          credentials: 'include',
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.authenticated) {
+          setUserPhone(data.phone);
+          setForm(prev => ({ ...prev, phone: data.phone }));
+        } else {
+          toast.error("Please login first");
+          router.push('/login');
+        }
+      } catch (error) {
+        console.error("Auth check failed:", error);
+        toast.error("Authentication check failed");
+        router.push('/login');
+      }
+    };
+
+    checkAuth();
+  }, [router]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -100,6 +263,7 @@ export default function RegisterPage() {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: 'include', // Include cookies
         body: JSON.stringify(submissionData),
       });
 
@@ -122,6 +286,7 @@ export default function RegisterPage() {
       setSubmitted(true);
     } catch (error) {
       console.error("Submission failed:", error);
+      toast.error("Submission failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -165,6 +330,16 @@ export default function RegisterPage() {
   };
 
   if (submitted) {
+    // return (
+    //   <main className="min-h-screen flex items-center justify-center px-4">
+    //     <div className="text-center space-y-4">
+    //       <h1 className="text-2xl font-semibold">🎉 Registration Complete</h1>
+    //       <p className="text-gray-600">
+    //         Thank you for registering for Mama Hogbe 2025.
+    //       </p>
+    //     </div>
+    //   </main>
+    // );
     return (
       <main className="min-h-screen flex items-center justify-center px-4">
         <div className="text-center space-y-4">
@@ -172,6 +347,11 @@ export default function RegisterPage() {
           <p className="text-gray-600">
             Thank you for registering for Mama Hogbe 2025.
           </p>
+          {userPhone && (
+            <p className="text-sm text-gray-500">
+              Registered with phone: {userPhone}
+            </p>
+          )}
         </div>
       </main>
     );
@@ -180,9 +360,18 @@ export default function RegisterPage() {
   return (
     <main className="min-h-screen flex items-center justify-center px-4 py-10 bg-white text-black">
       <form onSubmit={handleSubmit} className="w-full max-w-3xl space-y-4">
+        {/* <div className="text-center space-y-1">
+          <h1 className="text-2xl font-bold">Mama Hogbe 2025 Portal</h1>
+          <h2 className="text-lg text-gray-700">Official Audition Form</h2>
+        </div> */}
         <div className="text-center space-y-1">
           <h1 className="text-2xl font-bold">Mama Hogbe 2025 Portal</h1>
           <h2 className="text-lg text-gray-700">Official Audition Form</h2>
+          {userPhone && (
+            <p className="text-sm text-green-600">
+              Welcome! You&apos;re logged in with: {userPhone}
+            </p>
+          )}
         </div>
 
         <Image
@@ -335,7 +524,7 @@ export default function RegisterPage() {
 
         {/* Contact Details */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-1">
+          {/* <div className="space-y-1">
             <Label htmlFor="phone">Phone Number *</Label>
             <Input
               id="phone"
@@ -344,7 +533,22 @@ export default function RegisterPage() {
               onChange={handleChange}
               required
             />
-          </div>
+          </div> */}
+
+
+           {/* Phone number field - make it read-only if user is logged in */}
+        <div className="space-y-1">
+          <Label htmlFor="phone">Phone Number *</Label>
+          <Input
+            id="phone"
+            name="phone"
+            value={form.phone}
+            onChange={handleChange}
+            required
+            readOnly={!!userPhone}
+            className={userPhone ? "bg-gray-100" : ""}
+          />
+        </div>
 
           <div className="space-y-1">
             <Label htmlFor="whatsapp">WhatsApp Number</Label>

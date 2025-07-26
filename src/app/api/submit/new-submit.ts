@@ -1,8 +1,6 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
-import { cookies } from 'next/headers';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -20,69 +18,53 @@ function normalizeGhanaPhone(phone: string): string {
 
 export async function POST(request: Request) {
   try {
-    // Get the auth token from cookies
-    const cookieStore = cookies();
-    const authToken = (await cookieStore).get('auth_token')?.value;
-    const phoneCookie = (await cookieStore).get('phone')?.value;
-
-    if (!authToken || !phoneCookie) {
-      return NextResponse.json(
-        { error: 'Authentication required. Please login first.' },
-        { status: 401 }
-      );
-    }
-
     const formData = await request.json();
 
     if (!formData.phone) {
-      return NextResponse.json(
-        { error: 'Phone number is required' }, 
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Phone number is required' }, { status: 400 });
     }
 
     const phone = normalizeGhanaPhone(formData.phone);
 
-    // Verify the logged-in user matches the form submission
-    if (phone !== phoneCookie) {
-      return NextResponse.json(
-        { error: 'Form submission phone does not match logged-in user.' },
-        { status: 403 }
-      );
-    }
-
-    // Get the user's record from Supabase using auth token (user ID)
-    const { data: user, error: userError } = await supabase
+    // Check if user already exists
+    const { data: existingUser, error: userError } = await supabase
       .from('users')
-      .select('id, pin, used_pin')
-      .eq('id', authToken)
-      .single();
+      .select('id')
+      .eq('phone', phone)
+      .maybeSingle();
 
-    if (userError || !user) {
+    if (userError) throw userError;
+    if (existingUser) {
       return NextResponse.json(
-        { error: 'User not found in database.' },
-        { status: 404 }
-      );
-    }
-
-    // Check if PIN was already used
-    if (user.used_pin) {
-      return NextResponse.json(
-        { error: 'PIN has already been used for registration.' },
+        { error: 'This phone number is already registered' },
         { status: 400 }
       );
     }
 
-    // Update the user's record with form data and mark PIN as used
+    // Find the valid unused PIN
+    const { data: pinRecord, error: pinError } = await supabase
+      .from('users')
+      .select('id, pin')
+      .eq('phone', phone)
+      .eq('used_pin', false)
+      .maybeSingle();
+
+    if (pinError || !pinRecord) {
+      return NextResponse.json(
+        { error: 'No valid PIN found for this phone number. Please complete payment first.' },
+        { status: 400 }
+      );
+    }
+
+    // Update that same record with the form data, and mark the PIN as used
     const { data: updatedUser, error: updateError } = await supabase
       .from('users')
       .update({
         form_data: formData,
         used_pin: true,
-        updated_at: new Date().toISOString(),
-        // client_reference: `MH2025-${Date.now()}-${user.id}`
+        updated_at: new Date().toISOString()
       })
-      .eq('id', user.id)
+      .eq('id', pinRecord.id)
       .select()
       .single();
 
@@ -94,10 +76,8 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       userId: updatedUser.id,
-      clientReference: updatedUser.client_reference,
       message: 'Registration successful',
     });
-
   } catch (error) {
     console.error('Submission error:', error);
     return NextResponse.json(
@@ -107,7 +87,8 @@ export async function POST(request: Request) {
   }
 }
 
-// ... keep the existing sendRegistrationEmail and generateEmailHtml functions ...
+
+
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function sendRegistrationEmail(formData: any) {
@@ -228,3 +209,5 @@ function generateEmailHtml(formData: any): string {
     </html>
   `;
 }
+
+

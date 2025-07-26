@@ -176,7 +176,7 @@ export default function BuyPinPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-black text-white py-2 rounded hover:opacity-90 transition"
+                className="w-full bg-blue-600 text-white py-2 rounded hover:opacity-90 transition"
               >
                 {loading ? "Processing..." : `Buy PIN (${paymentAmount})`}
               </button>
@@ -186,12 +186,12 @@ export default function BuyPinPage() {
             <p>
               Powered by{" "}
               <a
-                href="https://xtopay.co"
+                href="https://sendexa.co"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="underline"
               >
-                Xtopay LLC
+                Sendexa
               </a>
             </p>
           </div>

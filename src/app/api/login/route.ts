@@ -43,16 +43,24 @@ export async function POST(req: Request) {
     }
 
     // Optional: Mark the PIN as used
-    await supabase
-      .from('users')
-      .update({ used_pin: true })
-      .eq('id', user.id);
+    // await supabase
+    //   .from('users')
+    //   .update({ used_pin: true })
+    //   .eq('id', user.id);
 
     // Create success response with cookies
     const response = NextResponse.json(
       { success: true, message: 'Login successful.' },
       { status: 200 }
     );
+
+    // In your login route.ts
+response.cookies.set('phone', phone, {
+  path: '/',
+  maxAge: 60 * 60 * 24,
+  sameSite: 'lax',
+  secure: process.env.NODE_ENV === 'production',
+});
 
     response.cookies.set('auth_token', user.id.toString(), {
       path: '/',

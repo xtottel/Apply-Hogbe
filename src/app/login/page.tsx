@@ -39,9 +39,10 @@ export default function LoginPage() {
 
       // Successful login - redirect to form
       router.push("/form");
-      
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "An unexpected error occurred");
+      toast.error(
+        error instanceof Error ? error.message : "An unexpected error occurred"
+      );
       console.error("Login error", error);
     } finally {
       setLoading(false);
@@ -133,22 +134,22 @@ export default function LoginPage() {
           </p>
         </form>
 
-        {/* <div className="text-center text-xs text-gray-500">
+        <div className="text-center text-xs text-gray-500">
           <p>
             Powered by{" "}
             <a
-              href="https://xtopay.co"
+              href="https://sendexa.co"
               target="_blank"
               rel="noopener noreferrer"
-              className="underline hover:text-gray-700"
+              className="underline"
             >
-              Xtopay LLC
+              Sendexa
             </a>
           </p>
-        </div> */}
+        </div>
       </div>
 
-      <ToastContainer 
+      <ToastContainer
         position="top-center"
         autoClose={5000}
         hideProgressBar={false}
