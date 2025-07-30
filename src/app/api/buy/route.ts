@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
 
     // Prepare payload for Hubtel API
     const payload = {
-      totalAmount: "2",
+      totalAmount: "100",
       description,
       callbackUrl:
         process.env.HUBTEL_CALLBACK_URL ??
