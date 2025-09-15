@@ -24,7 +24,7 @@ export default function BuyPinPage() {
   const [pin] = useState("");
   const [, setShowModal] = useState(false);
   const [, setError] = React.useState<string | null>(null);
-  const paymentAmount = "GH₵ 100";
+  const paymentAmount = "GH₵ 50";
   // Store clientReference for status check
   const [, setClientReference] = useState<string | null>(null);
 
